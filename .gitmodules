@@ -1,0 +1,12 @@
+[submodule "ext/tgbot-cpp"]
+	path = ext/tgbot-cpp
+	url = https://github.com/reo7sp/tgbot-cpp.git
+[submodule "ext/json"]
+	path = ext/json
+	url = https://github.com/nlohmann/json
+[submodule "ext/httplib"]
+	path = ext/httplib
+	url = https://github.com/yhirose/cpp-httplib
+[submodule "ext/SQLiteCpp"]
+	path = ext/SQLiteCpp
+	url = https://github.com/SRombauts/SQLiteCpp
