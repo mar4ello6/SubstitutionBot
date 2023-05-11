@@ -91,6 +91,9 @@ Config::Config(){
             m_class = j["class"];
             m_TGtoken = j["TGtoken"];
             m_targetChat = j["targetChat"];
+            m_schoolSiteURL = j["schoolSiteURL"];
+            m_schoolMenuLocation = j["schoolMenuLocation"];
+            m_schoolMenuButtonLabel = j["schoolMenuButtonLabel"];
             return;
         }
         catch (std::exception& e){

@@ -38,6 +38,11 @@ struct Config{
     std::string m_timetableURL = ""; //Timetable's (and substitutions') root url
     std::string m_class = ""; //Class as it's written in substitutions
     std::string m_TGtoken = ""; //Telegram bot token
+
+    std::string m_schoolSiteURL = "";
+    std::string m_schoolMenuLocation = "";
+    std::string m_schoolMenuButtonLabel = "";
+
     int64_t m_targetChat = 0; //Where will it send messages about substitutions. Right now we will need to do it manually
 
 };

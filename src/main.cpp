@@ -20,6 +20,7 @@ int main(){
     //setting callbacks
     g_bot->getEvents().onCommand("info", TGCommands::info);
     g_bot->getEvents().onCommand("subs", TGCommands::substitutions);
+    g_bot->getEvents().onCommand("menu", TGCommands::menu);
 
     printf("Starting event poll...\n");
     TgBot::TgLongPoll tgPoll(*g_bot);

@@ -7,4 +7,5 @@ namespace TGCommands{
     void info(TgBot::Message::Ptr message);
 
     void substitutions(TgBot::Message::Ptr message);
+    void menu(TgBot::Message::Ptr message);
 }

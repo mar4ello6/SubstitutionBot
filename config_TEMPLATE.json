@@ -2,5 +2,8 @@
     "timetableURL": "xxx.edupage.org",
     "class": "1A",
     "TGtoken": "your bot token",
+    "schoolSiteURL": "example.com",
+    "schoolMenuLocation": "/food",
+    "schoolMenuButtonLabel": "Menu for a week",
     "targetChat": 0
 }

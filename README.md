@@ -6,3 +6,4 @@ This bot uses:
 * [cpp-httplib](https://github.com/yhirose/cpp-httplib)
 * [JSON](https://github.com/nlohmann/json)
 * [SQLiteCpp](https://github.com/SRombauts/SQLiteCpp)
+* [gumbo-parser](https://github.com/google/gumbo-parser)
