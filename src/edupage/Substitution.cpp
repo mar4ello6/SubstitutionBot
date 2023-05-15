@@ -163,14 +163,17 @@ std::vector<Edupage::Substitution> GetSubstitutionsFromNode(GumboNode* node){
                 if (strcmp(infoAttr->value, "info") == 0 && sub.type != Edupage::Substitution::ABSENT) { //when class is absent, there's nothing we would need
                     sub.subject = valueStr.substr(0, valueStr.find('-') - 1);
 
-                    std::size_t teachersSeparator = valueStr.find("➔"); //This is 3 symbols!!!
-                    if (teachersSeparator != std::string::npos){ //someone is replacing teacher
-                        sub.sTeacher = valueStr.substr(teachersSeparator + 4, valueStr.length() - teachersSeparator - 4);
-                        
+                    if (sub.type == Edupage::Substitution::CHANGE){
                         std::size_t oTeacherStart = valueStr.find('(') + 1;
                         sub.oTeacher = valueStr.substr(oTeacherStart, valueStr.find(')') - oTeacherStart);
+
+                        std::size_t teachersSeparator = valueStr.find("➔"); //This is 3 symbols!!!
+                        if (teachersSeparator != std::string::npos){
+                            sub.sTeacher = valueStr.substr(teachersSeparator + 4, valueStr.length() - teachersSeparator - 4);
+                        }
+                        else sub.sTeacher = "TBA"; //Another teacher is not announced yet...
                     }
-                    else { //lesson is cancelled
+                    if (sub.type == Edupage::Substitution::REMOVE){
                         std::size_t oTeacherStart = valueStr.find('-') + 2;
                         sub.oTeacher = valueStr.substr(oTeacherStart, valueStr.find(',') - oTeacherStart);
                     }
