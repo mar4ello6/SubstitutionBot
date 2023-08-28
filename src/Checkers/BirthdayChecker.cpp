@@ -5,13 +5,21 @@ BirthdayChecker g_BDayChecker;
 
 void BirthdayChecker::OnUpdate() {
     if (m_nextCheck > GetCurrentTime()) return;
-    m_nextCheck = GetCurrentTime() + GetSecondsToMidnight() + 25200; //checking everyday at 7 o'clock
+    if (!m_bMidnightCheckDone){
+        for (auto& c : g_classmates){
+            c.m_daysUntilBirthday = DaysUntilBirthday(c.m_birthday);
+        }
+        m_bMidnightCheckDone = true;
+        m_nextCheck += 25200; //next check will be at 7 o'clock, to send notifications
+        return;
+    }
+    m_nextCheck = GetCurrentTime() + GetSecondsToMidnight();
+    m_bMidnightCheckDone = false;
 
     unsigned short birthdaysToday = 0;
     std::string birthdaysMsg = "";
 
     for (auto& c : g_classmates){
-        c.m_daysUntilBirthday = DaysUntilBirthday(c.m_birthday);
         if (c.m_daysUntilBirthday == 0){
             birthdaysToday++;
             birthdaysMsg += "🎂 " + c.m_name + "\n";

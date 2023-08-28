@@ -8,6 +8,7 @@ public:
 
 private:
     long long m_nextCheck = 0;
+    bool m_bMidnightCheckDone = false;
 
 };
 extern BirthdayChecker g_BDayChecker;
