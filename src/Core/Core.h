@@ -48,13 +48,27 @@ struct Config{
 };
 extern Config g_config;
 
+struct Classmate{
+    std::string m_name = "";
+    tm m_birthday;
+    unsigned short m_daysUntilBirthday = 0;
+
+    bool operator<(const Classmate& compr) { return m_daysUntilBirthday < compr.m_daysUntilBirthday; }
+};
+extern std::vector<Classmate> g_classmates;
+void LoadClassmates();
+unsigned short DaysUntilBirthday(tm birthday);
+
 extern TgBot::Bot* g_bot;
 
 long long GetCurrentTime();
+int GetSecondsToMidnight();
+bool IsMonday();
 std::string GetDate(int dayOffset = 0);
 std::string TimeToDate(tm* time);
 
 uint32_t HashString(unsigned char* str, int len);
+std::vector<std::string> Explode(std::string str, std::string token);
 
 
 template<typename ... Args>

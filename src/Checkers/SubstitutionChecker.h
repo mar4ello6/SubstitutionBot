@@ -18,7 +18,7 @@ private:
 
     std::vector<std::pair<time_t, std::vector<Edupage::Substitution>>> m_subsForAWeek;
 
-    long long m_lastCheck = 0;
+    long long m_nextCheck = 0;
 
     bool OnNew(std::vector<std::pair<time_t, std::vector<Edupage::Substitution>>> newSubs);
 

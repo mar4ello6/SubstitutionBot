@@ -8,4 +8,6 @@ namespace TGCommands{
 
     void substitutions(TgBot::Message::Ptr message);
     void menu(TgBot::Message::Ptr message);
+    void list(TgBot::Message::Ptr message);
+    void bdays(TgBot::Message::Ptr message);
 }

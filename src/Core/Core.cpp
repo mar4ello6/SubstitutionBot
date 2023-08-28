@@ -107,12 +107,79 @@ Config::Config(){
     exit(1);
 }
 
+std::vector<Classmate> g_classmates;
+
+void LoadClassmates(){
+    g_classmates.clear();
+    std::ifstream file("classmates.json");
+    if (file.is_open()){
+        try {
+            nlohmann::json j;
+            file >> j;
+            nlohmann::json classmates = j["classmates"];
+            for (auto& c : classmates){
+                Classmate mate;
+                mate.m_name = c["name"];
+                memset(&mate.m_birthday, 0, sizeof(mate.m_birthday));
+                std::vector<std::string> birthday = Explode(c["birthday"], "-");
+                if (birthday.size() == 3){
+                    mate.m_birthday.tm_year = atoi(birthday[0].c_str()) - 1900;
+                    mate.m_birthday.tm_mon = atoi(birthday[1].c_str()) - 1;
+                    mate.m_birthday.tm_mday = atoi(birthday[2].c_str());
+                    mktime(&mate.m_birthday);
+                }
+                else {
+                    printf("%s's birthday is %u in size\n", mate.m_name.c_str(), birthday.size());
+                }
+                mate.m_daysUntilBirthday = DaysUntilBirthday(mate.m_birthday);
+                g_classmates.push_back(mate);
+            }
+            return;
+        }
+        catch (std::exception& e){
+            printf("Caught exception while loading classmates: %s\n", e.what());
+        }
+    }
+    else {
+        printf("Couldn't open classmates.json. Is it in the right place?\n");
+    }
+    printf("Classmates loading failed\n");
+}
+
+unsigned short DaysUntilBirthday(tm birthday){
+    time_t rawtime = time(NULL);
+    tm *time = localtime(&rawtime);
+    if (time->tm_yday <= birthday.tm_yday) {
+        birthday.tm_year = time->tm_year;
+        mktime(&birthday);
+        return birthday.tm_yday - time->tm_yday;
+    }
+    else {
+        birthday.tm_year = time->tm_year + 1;
+        mktime(&birthday);
+        return 365 - time->tm_yday + birthday.tm_yday;
+    }
+    return 365;
+}
+
 TgBot::Bot* g_bot = NULL;
 
-long long GetCurrentTime()
-{
+long long GetCurrentTime() {
 	using namespace std::chrono;
 	return (duration_cast<seconds>(system_clock::now().time_since_epoch())).count();
+}
+
+int GetSecondsToMidnight(){
+    time_t rawtime = time(NULL);
+    tm *time = localtime(&rawtime);
+	int seconds = 86400 - ((time->tm_hour * 3600) + (time->tm_min * 60) + (time->tm_sec));
+	return seconds;
+}
+
+bool IsMonday(){
+    time_t rawtime = time(NULL);
+    tm *time = localtime(&rawtime);
+    return time->tm_wday == 1;
 }
 
 std::string GetDate(int dayOffset){
@@ -152,4 +219,20 @@ uint32_t HashString(unsigned char* str, int len)
 	}
 	return acc;
 
+}
+
+std::vector<std::string> Explode(std::string str, std::string token){
+    std::vector<std::string> result;
+    while(str.size()){
+        int index = str.find(token);
+        if(index!=std::string::npos){
+            result.push_back(str.substr(0,index));
+            str = str.substr(index+token.size());
+            if(str.size()==0)result.push_back(str);
+        }else{
+            result.push_back(str);
+            str = "";
+        }
+    }
+    return result;
 }

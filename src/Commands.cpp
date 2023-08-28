@@ -24,6 +24,16 @@ void TGCommands::sendMyCommands(){
     cmdArray->description = "Достать ссылку на меню в столовой.";
     commands.push_back(cmdArray);
 
+    cmdArray = TgBot::BotCommand::Ptr(new TgBot::BotCommand);
+    cmdArray->command = "list";
+    cmdArray->description = "Посмотреть список класса.";
+    commands.push_back(cmdArray);
+
+    cmdArray = TgBot::BotCommand::Ptr(new TgBot::BotCommand);
+    cmdArray->command = "bdays";
+    cmdArray->description = "Посмотреть дни рождения класса.";
+    commands.push_back(cmdArray);
+
     g_bot->getApi().setMyCommands(commands);
 }
 
@@ -112,4 +122,70 @@ void TGCommands::menu(TgBot::Message::Ptr message){
     g_bot->getApi().sendMessage(message->chat->id, string_format("<a href=\"%s\">Меню на неделю</a>", attribute->value), false, 0, nullptr, "HTML");
 
     gumbo_destroy_output(&kGumboDefaultOptions, output);
+}
+
+void TGCommands::list(TgBot::Message::Ptr message){
+    if (message->chat->id != g_config.m_targetChat) { //other people can (i think) dm our bot and get private info about our class... I don't want that
+        try {
+            g_bot->getApi().sendMessage(message->chat->id, "Этой коммандой можно пользоваться только в чате класса!", false, 0, nullptr, "HTML");
+        } catch (...) {}
+        return;
+    }
+    if (g_classmates.size() < 1) {
+        try {
+            g_bot->getApi().sendMessage(message->chat->id, "Список класса не загружен, попробуйте позже.", false, 0, nullptr, "HTML");
+        } catch (...) {}
+        return;
+    }
+
+    std::string messageStr = "Список " + g_config.m_class + " по eKool:\n";
+    uint32_t personNum = 0;
+    for (auto& c : g_classmates){
+        messageStr += std::to_string(++personNum) + ". " + c.m_name + "\n";
+    }
+    try {
+        g_bot->getApi().sendMessage(message->chat->id, messageStr.substr(0, messageStr.length() - 1), false, 0, nullptr, "HTML");
+    } catch (std::exception& e) { 
+        printf("Caught exception while sending class list: %s\n", e.what());
+    }
+}
+
+void TGCommands::bdays(TgBot::Message::Ptr message){
+    if (message->chat->id != g_config.m_targetChat) { //other people can (i think) dm our bot and get private info about our class... I don't want that
+        try {
+            g_bot->getApi().sendMessage(message->chat->id, "Этой коммандой можно пользоваться только в чате класса!", false, 0, nullptr, "HTML");
+        } catch (...) {}
+        return;
+    }
+    if (g_classmates.size() < 1) {
+        try {
+            g_bot->getApi().sendMessage(message->chat->id, "Список класса не загружен, попробуйте позже.", false, 0, nullptr, "HTML");
+        } catch (...) {}
+        return;
+    }
+
+    std::string messageStr = "Список дней рождений " + g_config.m_class + " класса:\n";
+    std::vector<Classmate> classmates = g_classmates;
+    std::sort(classmates.begin(), classmates.end());
+    for (auto& c : classmates){
+        messageStr += string_format("- %s (%02i.%02i.%04i: <b>", c.m_name.c_str(), c.m_birthday.tm_mday, c.m_birthday.tm_mon + 1, c.m_birthday.tm_year + 1900);
+        if (c.m_daysUntilBirthday == 0) messageStr += "СЕГОДНЯ! 🎂";
+        else if (c.m_daysUntilBirthday == 1) messageStr += "завтра";
+        else {
+            unsigned short daysLeft = c.m_daysUntilBirthday;
+            messageStr += "через " + std::to_string(daysLeft) + " ";
+            daysLeft %= 100;
+            if (daysLeft / 10 != 1) daysLeft %= 10;
+            if (daysLeft == 1) messageStr += "день";
+            else if (daysLeft >= 2 && daysLeft <= 4) messageStr += "дня";
+            else messageStr += "дней";
+        }
+        messageStr += "</b>)\n";
+    }
+
+    try {
+        g_bot->getApi().sendMessage(message->chat->id, messageStr.substr(0, messageStr.length() - 1), false, 0, nullptr, "HTML");
+    } catch (std::exception& e) { 
+        printf("Caught exception while sending birthdays: %s\n", e.what());
+    }
 }

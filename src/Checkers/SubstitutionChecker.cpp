@@ -7,8 +7,8 @@ SubstitutionChecker g_subChecker;
 
 void SubstitutionChecker::OnUpdate(){
     //we don't want to ddos edupage, right? so we have some delay between requests
-    if (m_lastCheck + SUBSTITUTION_CHECK_DELAY >= GetCurrentTime()) return;
-    m_lastCheck = GetCurrentTime();
+    if (m_nextCheck > GetCurrentTime()) return;
+    m_nextCheck = GetCurrentTime() + SUBSTITUTION_CHECK_DELAY;
 
     CheckSubstitutions();
 }
