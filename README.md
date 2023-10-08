@@ -1,6 +1,8 @@
 # SubstitutionBot
 This bot sends a message to a Telegram chat when substitutions on edupage.org changes.
 
+It also sends birthday reminders and can provide a link to the school menu.
+
 This bot uses:
 * [tgbot-cpp](https://github.com/reo7sp/tgbot-cpp)
 * [cpp-httplib](https://github.com/yhirose/cpp-httplib)

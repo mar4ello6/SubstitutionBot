@@ -117,6 +117,8 @@ void LoadClassmates(){
             nlohmann::json j;
             file >> j;
             nlohmann::json classmates = j["classmates"];
+            time_t rawtime = time(NULL);
+            tm *time = localtime(&rawtime);
             for (auto& c : classmates){
                 Classmate mate;
                 mate.m_name = c["name"];
@@ -132,6 +134,10 @@ void LoadClassmates(){
                     printf("%s's birthday is %u in size\n", mate.m_name.c_str(), birthday.size());
                 }
                 mate.m_daysUntilBirthday = DaysUntilBirthday(mate.m_birthday);
+                mate.m_age = time->tm_year - mate.m_birthday.tm_year;
+                if (mate.m_birthday.tm_yday > time->tm_yday) mate.m_age--;
+                mate.m_bdayAge = time->tm_year - mate.m_birthday.tm_year;
+                if (mate.m_birthday.tm_yday < time->tm_yday) mate.m_bdayAge++;
                 g_classmates.push_back(mate);
             }
             return;

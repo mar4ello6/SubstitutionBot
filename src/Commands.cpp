@@ -83,7 +83,10 @@ GumboNode* GetMenuLinkNode(GumboNode* node){
         }
     }
     if (node->type == GUMBO_NODE_TEXT){
-        if (strcmp(node->v.text.text, g_config.m_schoolMenuButtonLabel.c_str()) == 0) return node->parent;
+        if (strcmp(node->v.text.text, g_config.m_schoolMenuButtonLabel.c_str()) == 0) {
+            if (!gumbo_get_attribute(&node->parent->v.element.attributes, "href")) return NULL; //it should have some link...
+            return node->parent;
+        }
     }
     return NULL;
 }
@@ -168,7 +171,7 @@ void TGCommands::bdays(TgBot::Message::Ptr message){
     std::vector<Classmate> classmates = g_classmates;
     std::sort(classmates.begin(), classmates.end());
     for (auto& c : classmates){
-        messageStr += string_format("- %s (%02i.%02i.%04i: <b>", c.m_name.c_str(), c.m_birthday.tm_mday, c.m_birthday.tm_mon + 1, c.m_birthday.tm_year + 1900);
+        messageStr += string_format("- %s (%02i.%02i.%04i: <i>%i</i>, <b>", c.m_name.c_str(), c.m_birthday.tm_mday, c.m_birthday.tm_mon + 1, c.m_birthday.tm_year + 1900, c.m_age);
         if (c.m_daysUntilBirthday == 0) messageStr += "СЕГОДНЯ! 🎂";
         else if (c.m_daysUntilBirthday == 1) messageStr += "завтра";
         else {
@@ -179,6 +182,9 @@ void TGCommands::bdays(TgBot::Message::Ptr message){
             if (daysLeft == 1) messageStr += "день";
             else if (daysLeft >= 2 && daysLeft <= 4) messageStr += "дня";
             else messageStr += "дней";
+        }
+        if (c.m_daysUntilBirthday >= 1){
+            messageStr += string_format(" %i-летие", c.m_bdayAge);
         }
         messageStr += "</b>)\n";
     }

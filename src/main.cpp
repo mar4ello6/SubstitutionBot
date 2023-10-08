@@ -35,7 +35,12 @@ int main(){
         g_BDayChecker.OnUpdate();
 
         //this timeouts in around 10 seconds, looks good enough...
-        tgPoll.start();
+        try {
+            tgPoll.start();
+        }
+        catch (std::exception& e){
+            printf("TG poll failed: %s\n", e.what());
+        }
     }
 
     delete g_bot;

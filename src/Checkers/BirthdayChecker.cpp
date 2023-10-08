@@ -6,8 +6,17 @@ BirthdayChecker g_BDayChecker;
 void BirthdayChecker::OnUpdate() {
     if (m_nextCheck > GetCurrentTime()) return;
     if (!m_bMidnightCheckDone){
+        time_t rawtime = time(NULL);
+        tm *time = localtime(&rawtime);
         for (auto& c : g_classmates){
             c.m_daysUntilBirthday = DaysUntilBirthday(c.m_birthday);
+            if (c.m_daysUntilBirthday == 0){
+                c.m_age = time->tm_year - c.m_birthday.tm_year;
+            }
+            if (c.m_daysUntilBirthday >= 364){
+                c.m_bdayAge = time->tm_year - c.m_birthday.tm_year;
+                if (c.m_birthday.tm_yday < time->tm_yday) c.m_bdayAge++;
+            }
         }
         m_bMidnightCheckDone = true;
         m_nextCheck += 25200; //next check will be at 7 o'clock, to send notifications
@@ -22,7 +31,7 @@ void BirthdayChecker::OnUpdate() {
     for (auto& c : g_classmates){
         if (c.m_daysUntilBirthday == 0){
             birthdaysToday++;
-            birthdaysMsg += "🎂 " + c.m_name + "\n";
+            birthdaysMsg += "🎂 " + c.m_name + " (" + std::to_string(c.m_bdayAge) + ")\n";
         }
     }
 
@@ -32,7 +41,7 @@ void BirthdayChecker::OnUpdate() {
         for (auto& c : g_classmates){
             if (c.m_daysUntilBirthday <= 6) {
                 birthdaysThisWeek++;
-                messageStr += "🎂 " + c.m_name + ": ";
+                messageStr += "🎂 " + c.m_name + " (" + std::to_string(c.m_bdayAge) + "): ";
                 switch (c.m_daysUntilBirthday){
                     case 0:
                         messageStr += "СЕГОДНЯ!";
