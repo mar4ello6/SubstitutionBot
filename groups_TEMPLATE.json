@@ -1,0 +1,7 @@
+{
+    "groups": [
+        { "id": 0, "name": "Russian" },
+        { "id": 1, "name": "Estonian" },
+        { "id": 2, "name": "English" }
+    ]
+}

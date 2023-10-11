@@ -2,11 +2,15 @@
     "classmates": [
         {
             "name": "Person 1",
-            "birthday": "1999-12-31"
+            "birthday": "1999-12-31",
+            "tgID": 123456789,
+            "groups": [ 0, 1 ]
         },
         {
             "name": "Person 2",
-            "birthday": "2000-01-01"
+            "birthday": "2000-01-01",
+            "tgID": 987654321,
+            "groups": [ 1, 2 ]
         }
     ]
 }

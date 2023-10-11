@@ -109,6 +109,11 @@ Config::Config(){
 
 std::vector<Classmate> g_classmates;
 
+bool Classmate::IsInGroup(unsigned char groupID){
+    for (auto& g : m_groups) if (g == groupID) return true;
+    return false;
+}
+
 void LoadClassmates(){
     g_classmates.clear();
     std::ifstream file("classmates.json");
@@ -122,6 +127,8 @@ void LoadClassmates(){
             for (auto& c : classmates){
                 Classmate mate;
                 mate.m_name = c["name"];
+                mate.m_tgID = c["tgID"];
+                mate.m_groups = c["groups"].get<std::vector<unsigned char>>();
                 memset(&mate.m_birthday, 0, sizeof(mate.m_birthday));
                 std::vector<std::string> birthday = Explode(c["birthday"], "-");
                 if (birthday.size() == 3){
@@ -168,6 +175,34 @@ unsigned short DaysUntilBirthday(tm birthday){
     return 365;
 }
 
+std::vector<Group> g_groups;
+
+void LoadGroups(){
+    g_groups.clear();
+    std::ifstream file("groups.json");
+    if (file.is_open()){
+        try {
+            nlohmann::json j;
+            file >> j;
+            nlohmann::json groups = j["groups"];
+            for (auto& g : groups){
+                Group group;
+                group.m_id = g["id"];
+                group.m_name = g["name"];
+                g_groups.push_back(group);
+            }
+            return;
+        }
+        catch (std::exception& e){
+            printf("Caught exception while loading groups: %s\n", e.what());
+        }
+    }
+    else {
+        printf("Couldn't open groups.json. Is it in the right place?\n");
+    }
+    printf("Groups loading failed\n");
+}
+
 TgBot::Bot* g_bot = NULL;
 
 long long GetCurrentTime() {
@@ -198,9 +233,39 @@ std::string GetDate(int dayOffset){
     return dateStr.str();
 }
 
-std::string TimeToDate(tm* time){
+std::string TimeToDate(tm* time, bool addDayName){
     std::stringstream dateStr;
     dateStr << std::put_time(time, "%Y-%m-%d");
+    if (addDayName){
+        std::string result = dateStr.str() + " (";
+        switch (time->tm_wday){
+            case 1:
+                result += "Понедельник";
+            break;
+            case 2:
+                result += "Вторник";
+            break;
+            case 3:
+                result += "Среда";
+            break;
+            case 4:
+                result += "Четверг";
+            break;
+            case 5:
+                result += "Пятница";
+            break;
+            case 6:
+                result += "Суббота";
+            break;
+            case 0:
+                result += "Воскресенье";
+            break;
+            default:
+                result += "Что-то";
+            break;
+        }
+        return result + ")";
+    }
     return dateStr.str();
 }
 

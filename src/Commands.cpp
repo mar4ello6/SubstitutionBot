@@ -34,6 +34,16 @@ void TGCommands::sendMyCommands(){
     cmdArray->description = "Посмотреть дни рождения класса.";
     commands.push_back(cmdArray);
 
+    cmdArray = TgBot::BotCommand::Ptr(new TgBot::BotCommand);
+    cmdArray->command = "everyone";
+    cmdArray->description = "Пингануть всех.";
+    commands.push_back(cmdArray);
+
+    cmdArray = TgBot::BotCommand::Ptr(new TgBot::BotCommand);
+    cmdArray->command = "ping";
+    cmdArray->description = "Пингануть группу.";
+    commands.push_back(cmdArray);
+
     g_bot->getApi().setMyCommands(commands);
 }
 
@@ -60,7 +70,7 @@ void TGCommands::substitutions(TgBot::Message::Ptr message){
         for (auto& n : subs){
             if (n.second.size() < 1) continue; //that's strange, it shouldn't really be here
 
-            messageStr += TimeToDate(localtime(&n.first)) + ":\n";
+            messageStr += TimeToDate(localtime(&n.first), true) + ":\n";
             for (auto& s : n.second) messageStr += s.GetString() + "\n";
             messageStr += "\n";
         }
@@ -193,5 +203,123 @@ void TGCommands::bdays(TgBot::Message::Ptr message){
         g_bot->getApi().sendMessage(message->chat->id, messageStr.substr(0, messageStr.length() - 1), false, 0, nullptr, "HTML");
     } catch (std::exception& e) { 
         printf("Caught exception while sending birthdays: %s\n", e.what());
+    }
+}
+
+void TGCommands::everyone(TgBot::Message::Ptr message){
+    if (message->chat->id != g_config.m_targetChat) { //other people can (i think) dm our bot and get private info about our class... I don't want that
+        try {
+            g_bot->getApi().sendMessage(message->chat->id, "Этой коммандой можно пользоваться только в чате класса!", false, 0, nullptr, "HTML");
+        } catch (...) {}
+        return;
+    }
+    if (g_classmates.size() < 1) {
+        try {
+            g_bot->getApi().sendMessage(message->chat->id, "Список класса не загружен, попробуйте позже.", false, 0, nullptr, "HTML");
+        } catch (...) {}
+        return;
+    }
+
+    std::string msg = "Пинг\\!";
+    for (auto& c : g_classmates){
+        if (!c.m_tgID) continue;
+        msg += "[\u2009](tg://user?id=" + std::to_string(c.m_tgID) + ")";
+    }
+
+    try {
+        g_bot->getApi().sendMessage(message->chat->id, msg, false, 0, nullptr, "MarkdownV2");
+    } catch (std::exception& e) { 
+        printf("Caught exception while sending everyone: %s\n", e.what());
+    }
+}
+
+void TGCommands::ping(TgBot::Message::Ptr message){
+    if (message->chat->id != g_config.m_targetChat) { //other people can (i think) dm our bot and get private info about our class... I don't want that
+        try {
+            g_bot->getApi().sendMessage(message->chat->id, "Этой коммандой можно пользоваться только в чате класса!", false, 0, nullptr, "HTML");
+        } catch (...) {}
+        return;
+    }
+    if (g_classmates.size() < 1) {
+        try {
+            g_bot->getApi().sendMessage(message->chat->id, "Список класса не загружен, попробуйте позже.", false, 0, nullptr, "HTML");
+        } catch (...) {}
+        return;
+    }
+
+    TgBot::InlineKeyboardMarkup::Ptr inlineKeyboard(new TgBot::InlineKeyboardMarkup);
+    std::vector<TgBot::InlineKeyboardButton::Ptr> buttonsRow;
+    TgBot::InlineKeyboardButton::Ptr inlineButton;
+
+    buttonsRow.clear();
+    for (auto& g : g_groups){
+        inlineButton = TgBot::InlineKeyboardButton::Ptr(new TgBot::InlineKeyboardButton);
+        inlineButton->text = g.m_name;
+        inlineButton->callbackData = "ping" + std::to_string(g.m_id);
+        buttonsRow.push_back(inlineButton);
+
+        if (buttonsRow.size() >= 2){
+            inlineKeyboard->inlineKeyboard.push_back(buttonsRow);
+            buttonsRow.clear();
+        }
+    }
+    if (buttonsRow.size() > 0){
+        inlineKeyboard->inlineKeyboard.push_back(buttonsRow);
+        buttonsRow.clear();
+    }
+
+    try {
+        g_bot->getApi().sendMessage(message->chat->id, "Кого пингануть?", false, 0, inlineKeyboard, "HTML");
+    } catch (std::exception& e) { 
+        printf("Caught exception while sending ping command: %s\n", e.what());
+    }
+}
+
+void TGCommands::pingCallback(TgBot::CallbackQuery::Ptr query){
+    if (query->data.substr(0, 4) != "ping") return;
+    if (query->message->chat->id != g_config.m_targetChat) { //other people can (i think) dm our bot and get private info about our class... I don't want that
+        try {
+            g_bot->getApi().answerCallbackQuery(query->id, "Этой коммандой можно пользоваться только в чате класса!", true);
+        } catch (...) {}
+        return;
+    }
+    if (g_classmates.size() < 1) {
+        try {
+            g_bot->getApi().answerCallbackQuery(query->id, "Список класса не загружен, попробуйте позже.", true);
+        } catch (...) {}
+        return;
+    }
+
+    unsigned char gId = 0;
+    try {
+        gId = atoi(query->data.substr(4).c_str());
+    } catch (...) { return; }
+    Group group;
+    for (auto& g : g_groups) {
+        if (g.m_id == gId) {
+            group = g;
+            break;
+        }
+    }
+    if (group.m_name.empty()) return;
+    std::string msg = "Пинг, " + group.m_name + "!";
+    for (auto& c : g_classmates){
+        if (!c.m_tgID) continue;
+        if (!c.IsInGroup(group.m_id)) continue;
+        msg += "<a href=\"tg://user?id=" + std::to_string(c.m_tgID) + "\">\u2009</a>";
+    }
+
+    try {
+        g_bot->getApi().sendMessage(query->message->chat->id, msg, false, 0, nullptr, "HTML");
+    } catch (std::exception& e) { 
+        printf("Caught exception while sending ping callback: %s\n", e.what());
+        g_bot->getApi().answerCallbackQuery(query->id, "Произошла ошибка, попробуй ещё раз!", true);
+        return;
+    }
+
+    try {
+        g_bot->getApi().answerCallbackQuery(query->id, "Пинг группе \"" + group.m_name + "\" отправлен.");
+    } catch (std::exception& e) { 
+        printf("Caught exception while answering ping callback: %s\n", e.what());
     }
 }

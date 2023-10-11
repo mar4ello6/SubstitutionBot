@@ -58,7 +58,7 @@ bool SubstitutionChecker::OnNew(std::vector<std::pair<time_t, std::vector<Edupag
 
     std::string message = "Замены обновились!\n\n";
     for (auto& n : newSubs){
-        message += TimeToDate(localtime(&n.first)) + ":\n";
+        message += TimeToDate(localtime(&n.first), true) + ":\n";
         if (n.second.size() < 1){
             message += "Замен нет. 😢\n";
         }

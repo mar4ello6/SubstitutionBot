@@ -50,16 +50,26 @@ extern Config g_config;
 
 struct Classmate{
     std::string m_name = "";
+    int64_t m_tgID = 0;
+    std::vector<unsigned char> m_groups;
     tm m_birthday;
     unsigned short m_daysUntilBirthday = 0;
     unsigned char m_age = 0;
     unsigned char m_bdayAge = 0;
 
     bool operator<(const Classmate& compr) { return m_daysUntilBirthday < compr.m_daysUntilBirthday; }
+    bool IsInGroup(unsigned char groupID);
 };
 extern std::vector<Classmate> g_classmates;
 void LoadClassmates();
 unsigned short DaysUntilBirthday(tm birthday);
+
+struct Group{
+    std::string m_name = "";
+    unsigned char m_id = 0;
+};
+extern std::vector<Group> g_groups;
+void LoadGroups();
 
 extern TgBot::Bot* g_bot;
 
@@ -67,7 +77,7 @@ long long GetCurrentTime();
 int GetSecondsToMidnight();
 bool IsMonday();
 std::string GetDate(int dayOffset = 0);
-std::string TimeToDate(tm* time);
+std::string TimeToDate(tm* time, bool addDayName = false);
 
 uint32_t HashString(unsigned char* str, int len);
 std::vector<std::string> Explode(std::string str, std::string token);

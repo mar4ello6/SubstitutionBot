@@ -5,8 +5,9 @@
 #include "Commands.h"
 
 int main(){
-    //loading classmates and their birthdays
+    //loading classmates, their birthdays and groups
     LoadClassmates();
+    LoadGroups();
 
     g_bot = new TgBot::Bot(g_config.m_TGtoken);
 
@@ -27,6 +28,8 @@ int main(){
     g_bot->getEvents().onCommand("menu", TGCommands::menu);
     g_bot->getEvents().onCommand("list", TGCommands::list);
     g_bot->getEvents().onCommand("bdays", TGCommands::bdays);
+    g_bot->getEvents().onCommand("everyone", TGCommands::everyone);
+    g_bot->getEvents().onCommand("ping", TGCommands::ping);
 
     printf("Starting event poll...\n");
     TgBot::TgLongPoll tgPoll(*g_bot);
