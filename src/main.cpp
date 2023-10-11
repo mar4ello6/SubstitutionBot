@@ -30,6 +30,7 @@ int main(){
     g_bot->getEvents().onCommand("bdays", TGCommands::bdays);
     g_bot->getEvents().onCommand("everyone", TGCommands::everyone);
     g_bot->getEvents().onCommand("ping", TGCommands::ping);
+    g_bot->getEvents().onCallbackQuery(TGCommands::pingCallback);
 
     printf("Starting event poll...\n");
     TgBot::TgLongPoll tgPoll(*g_bot);
