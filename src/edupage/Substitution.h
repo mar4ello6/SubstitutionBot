@@ -13,6 +13,7 @@ namespace Edupage{
         std::string subject;
         std::string oTeacher; //original teacher who's being replaced
         std::string sTeacher; //teacher who will replace
+        std::string note; //some times there are some notes and info
 
         int GetSpaceForSerialize();
         /**
