@@ -1,0 +1,19 @@
+{
+    "courses": [
+        {
+            "lessonsInAWeek": 2,
+            "subjects":[
+                "Estonian",
+                "Maths"
+            ],
+            "ends": ["2024-01-15", "2024-06-01"]
+        },
+        {
+            "lessonsInAWeek": 1,
+            "subjects":[
+                "English"
+            ],
+            "ends": ["2024-06-01"]
+        }
+    ]
+}

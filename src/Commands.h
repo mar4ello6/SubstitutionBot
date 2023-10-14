@@ -13,4 +13,7 @@ namespace TGCommands{
     void everyone(TgBot::Message::Ptr message);
     void ping(TgBot::Message::Ptr message);
     void pingCallback(TgBot::CallbackQuery::Ptr query);
+    void ssite(TgBot::Message::Ptr message);
+    void courses(TgBot::Message::Ptr message);
+    void holidays(TgBot::Message::Ptr message);
 }

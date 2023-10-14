@@ -2,12 +2,14 @@
 #include "Core/Core.h"
 #include "Checkers/SubstitutionChecker.h"
 #include "Checkers/BirthdayChecker.h"
+#include "Checkers/CoursesChecker.h"
 #include "Commands.h"
 
 int main(){
     //loading classmates, their birthdays and groups
     LoadClassmates();
     LoadGroups();
+    LoadCourses();
 
     g_bot = new TgBot::Bot(g_config.m_TGtoken);
 
@@ -31,12 +33,16 @@ int main(){
     g_bot->getEvents().onCommand("everyone", TGCommands::everyone);
     g_bot->getEvents().onCommand("ping", TGCommands::ping);
     g_bot->getEvents().onCallbackQuery(TGCommands::pingCallback);
+    g_bot->getEvents().onCommand("ssite", TGCommands::ssite);
+    g_bot->getEvents().onCommand("courses", TGCommands::courses);
+    g_bot->getEvents().onCommand("holidays", TGCommands::holidays);
 
     printf("Starting event poll...\n");
     TgBot::TgLongPoll tgPoll(*g_bot);
     while (true){
         g_subChecker.OnUpdate();
         g_BDayChecker.OnUpdate();
+        g_coursesChecker.OnUpdate();
 
         //this timeouts in around 10 seconds, looks good enough...
         try {

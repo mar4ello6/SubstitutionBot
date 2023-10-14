@@ -44,6 +44,21 @@ void TGCommands::sendMyCommands(){
     cmdArray->description = "Пингануть группу.";
     commands.push_back(cmdArray);
 
+    cmdArray = TgBot::BotCommand::Ptr(new TgBot::BotCommand);
+    cmdArray->command = "ssite";
+    cmdArray->description = "Получить ссылку на сайт ученика.";
+    commands.push_back(cmdArray);
+
+    cmdArray = TgBot::BotCommand::Ptr(new TgBot::BotCommand);
+    cmdArray->command = "courses";
+    cmdArray->description = "Посмотреть через сколько заканчиваются курсы.";
+    commands.push_back(cmdArray);
+
+    cmdArray = TgBot::BotCommand::Ptr(new TgBot::BotCommand);
+    cmdArray->command = "holidays";
+    cmdArray->description = "Посмотреть когда каникулы.";
+    commands.push_back(cmdArray);
+
     g_bot->getApi().setMyCommands(commands);
 }
 
@@ -132,7 +147,11 @@ void TGCommands::menu(TgBot::Message::Ptr message){
         gumbo_destroy_output(&kGumboDefaultOptions, output);
         return;
     }
-    g_bot->getApi().sendMessage(message->chat->id, string_format("<a href=\"%s\">Меню на неделю</a>", attribute->value), false, 0, nullptr, "HTML");
+    try {
+        g_bot->getApi().sendMessage(message->chat->id, string_format("<a href=\"%s\">Меню на неделю</a>", attribute->value), false, 0, nullptr, "HTML");
+    } catch (std::exception& e) { 
+        printf("Caught exception while sending menu: %s\n", e.what());
+    }
 
     gumbo_destroy_output(&kGumboDefaultOptions, output);
 }
@@ -321,5 +340,121 @@ void TGCommands::pingCallback(TgBot::CallbackQuery::Ptr query){
         g_bot->getApi().answerCallbackQuery(query->id, "Пинг группе \"" + group.m_name + "\" отправлен.");
     } catch (std::exception& e) { 
         printf("Caught exception while answering ping callback: %s\n", e.what());
+    }
+}
+
+void TGCommands::ssite(TgBot::Message::Ptr message){
+    try {
+        g_bot->getApi().sendMessage(message->chat->id, "<a href=\"" + g_config.m_studentSite + "\">Сайт ученика</a>", false, 0, nullptr, "HTML");
+    } catch (std::exception& e) { 
+        printf("Caught exception while sending menu: %s\n", e.what());
+    }
+}
+
+void TGCommands::courses(TgBot::Message::Ptr message){
+    if (g_courses.size() < 1){
+        try {
+            g_bot->getApi().sendMessage(message->chat->id, "Все курсы уже закончились. (Или они не загружены)", false, 0, nullptr, "HTML");
+        } catch (...) {}
+        return;
+    }
+
+    std::string msg = "";
+    for (auto& c : g_courses){
+        if (!msg.empty()) msg += "\n\n";
+        msg += "Через ";
+        unsigned char mon = c.m_daysToEnd / 30;
+        unsigned char days = c.m_daysToEnd % 30;
+        if (mon > 0){
+            msg += std::to_string(mon) + " ";
+            mon %= 100;
+            if (mon / 10 != 1) mon %= 10;
+            if (mon == 1) msg += "месяц";
+            else if (mon >= 2 && mon <= 4) msg += "месяца";
+            else msg += "месяцев";
+            msg += " ";
+        }
+        if (days > 0 || mon == 0){
+            if (mon > 0) msg += "и ";
+            msg += std::to_string(days) + " ";
+            days %= 100;
+            if (days / 10 != 1) days %= 10;
+            if (days == 1) msg += "день";
+            else if (days >= 2 && days <= 4) msg += "дня";
+            else msg += "дней";
+            msg += " ";
+        }
+        msg += string_format("(%02i.%02i.%04i) ", c.m_end.tm_mday, c.m_end.tm_mon + 1, c.m_end.tm_year + 1900);
+
+        msg += "закончатся следующие курсы: ";
+        for (auto& s : c.m_subjects) msg += s + ", ";
+        msg = msg.substr(0, msg.length() - 2);
+        msg += ".";
+    }
+
+    try {
+        g_bot->getApi().sendMessage(message->chat->id, msg, false, 0, nullptr, "HTML");
+    } catch (std::exception& e) { 
+        printf("Caught exception while sending courses: %s\n", e.what());
+    }
+}
+
+void TGCommands::holidays(TgBot::Message::Ptr message){
+    static long long nextReload = 0;
+    if (nextReload <= GetCurrentTime()){
+        nextReload = GetCurrentTime() + GetSecondsToMidnight();
+        LoadHolidays();
+    }
+    
+    if (g_holidays.size() < 1){
+        try {
+            g_bot->getApi().sendMessage(message->chat->id, "Каинкул не будет.", false, 0, nullptr, "HTML");
+        } catch (...) {}
+        return;
+    }
+
+    std::string msg = "Предстоящие каникулы:";
+    bool first = true;
+    for (auto& h : g_holidays){
+        msg += "\n- ";
+        if (first) msg += "<b>";
+        if (h.m_bStarted){
+            msg += "Закончатся через ";
+        }
+        else {
+            msg += "Начнутся через ";
+        }
+
+        unsigned char mon = h.m_daysTo / 30;
+        unsigned char days = h.m_daysTo % 30;
+        if (mon > 0){
+            msg += std::to_string(mon) + " ";
+            mon %= 100;
+            if (mon / 10 != 1) mon %= 10;
+            if (mon == 1) msg += "месяц";
+            else if (mon >= 2 && mon <= 4) msg += "месяца";
+            else msg += "месяцев";
+            msg += " ";
+        }
+        if (days > 0 || mon == 0){
+            if (mon > 0) msg += "и ";
+            msg += std::to_string(days) + " ";
+            days %= 100;
+            if (days / 10 != 1) days %= 10;
+            if (days == 1) msg += "день";
+            else if (days >= 2 && days <= 4) msg += "дня";
+            else msg += "дней";
+            msg += " ";
+        }
+        msg += string_format("(%02i.%02i.%04i - %02i.%02i.%04i)", h.m_start.tm_mday, h.m_start.tm_mon + 1, h.m_start.tm_year + 1900,
+                                                                  h.m_end.tm_mday, h.m_end.tm_mon + 1, h.m_end.tm_year + 1900);
+        if (first) msg += "</b>";
+        first = false;
+    }
+
+    try {
+        g_bot->getApi().sendMessage(message->chat->id, msg, false, 0, nullptr, "HTML");
+    } catch (std::exception& e) { 
+        printf("Caught exception while sending holidays: %s\n", e.what());
     }
 }

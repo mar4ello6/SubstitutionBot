@@ -45,10 +45,14 @@ struct Config{
 
     int64_t m_targetChat = 0; //Where will it send messages about substitutions. Right now we will need to do it manually
 
+    std::string m_studentSite = ""; //Site with some info for students
+
 };
 extern Config g_config;
 
 struct Classmate{
+    Classmate();
+
     std::string m_name = "";
     int64_t m_tgID = 0;
     std::vector<unsigned char> m_groups;
@@ -70,6 +74,29 @@ struct Group{
 };
 extern std::vector<Group> g_groups;
 void LoadGroups();
+
+struct Course{
+    Course();
+
+    tm m_end;
+    short m_daysToEnd = 0;
+    std::vector<std::string> m_subjects;
+
+    bool operator<(const Course& compr) { return m_daysToEnd < compr.m_daysToEnd; }
+};
+extern std::vector<Course> g_courses;
+void LoadCourses();
+
+struct Holiday{
+    Holiday();
+
+    tm m_start;
+    tm m_end;
+    short m_daysTo = 0; //days to start or end
+    bool m_bStarted = false;
+};
+extern std::vector<Holiday> g_holidays;
+void LoadHolidays(); //it's loaded when someone uses command /holidays
 
 extern TgBot::Bot* g_bot;
 

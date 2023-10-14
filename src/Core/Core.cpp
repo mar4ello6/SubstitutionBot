@@ -94,6 +94,7 @@ Config::Config(){
             m_schoolSiteURL = j["schoolSiteURL"];
             m_schoolMenuLocation = j["schoolMenuLocation"];
             m_schoolMenuButtonLabel = j["schoolMenuButtonLabel"];
+            m_studentSite = j["studentSite"];
             return;
         }
         catch (std::exception& e){
@@ -107,6 +108,9 @@ Config::Config(){
     exit(1);
 }
 
+Classmate::Classmate(){
+    memset(&m_birthday, 0, sizeof(m_birthday));
+}
 std::vector<Classmate> g_classmates;
 
 bool Classmate::IsInGroup(unsigned char groupID){
@@ -129,7 +133,6 @@ void LoadClassmates(){
                 mate.m_name = c["name"];
                 mate.m_tgID = c["tgID"];
                 mate.m_groups = c["groups"].get<std::vector<unsigned char>>();
-                memset(&mate.m_birthday, 0, sizeof(mate.m_birthday));
                 std::vector<std::string> birthday = Explode(c["birthday"], "-");
                 if (birthday.size() == 3){
                     mate.m_birthday.tm_year = atoi(birthday[0].c_str()) - 1900;
@@ -201,6 +204,139 @@ void LoadGroups(){
         printf("Couldn't open groups.json. Is it in the right place?\n");
     }
     printf("Groups loading failed\n");
+}
+
+Course::Course(){
+    memset(&m_end, 0, sizeof(m_end));
+}
+std::vector<Course> g_courses;
+
+void LoadCourses(){
+    g_courses.clear();
+    std::ifstream file("courses.json");
+    if (file.is_open()){
+        try {
+            nlohmann::json j;
+            file >> j;
+            nlohmann::json courses = j["courses"];
+            time_t currentTime = time(NULL);
+            tm* currentTm = localtime(&currentTime);
+            currentTm->tm_hour = 0;
+            currentTm->tm_min = 0;
+            currentTm->tm_sec = 0;
+            currentTime = mktime(currentTm);
+            for (auto& c : courses){
+                Course course;
+                course.m_subjects = c["subjects"].get<std::vector<std::string>>();
+                if (course.m_subjects.size() < 1) continue;
+                std::vector<std::string> periods = c["ends"].get<std::vector<std::string>>();
+                bool firstPeriod = true;
+                for (auto& p : periods){
+                    tm end;
+                    memset(&end, 0, sizeof(end));
+                    std::vector<std::string> endVec = Explode(p, "-");
+                    if (endVec.size() == 3){
+                        end.tm_year = atoi(endVec[0].c_str()) - 1900;
+                        end.tm_mon = atoi(endVec[1].c_str()) - 1;
+                        end.tm_mday = atoi(endVec[2].c_str());
+                    }
+                    else {
+                        printf("Some of the courses' end date is %u in size (should be 3)\n", endVec.size());
+                        continue;
+                    }
+                    if (firstPeriod){
+                        firstPeriod = false;
+                        course.m_end = end;
+                        course.m_daysToEnd = round(difftime(mktime(&end), currentTime) / 86400);
+                    }
+                    else {
+                        short daysToEnd = round(difftime(mktime(&end), currentTime) / 86400);
+                        if (course.m_daysToEnd > daysToEnd || (course.m_daysToEnd < 0 && daysToEnd >= 0)){
+                            course.m_end = end;
+                            course.m_daysToEnd = daysToEnd;
+                        }
+                    }
+                }
+                if (course.m_daysToEnd >= 0) g_courses.push_back(course);
+            }
+            std::sort(g_courses.begin(), g_courses.end());
+            return;
+        }
+        catch (std::exception& e){
+            printf("Caught exception while loading courses: %s\n", e.what());
+        }
+    }
+    else {
+        printf("Couldn't open courses.json. Is it in the right place?\n");
+    }
+    printf("Courses loading failed\n");
+}
+
+Holiday::Holiday(){
+    memset(&m_start, 0, sizeof(m_start));
+    memset(&m_end, 0, sizeof(m_end));
+}
+std::vector<Holiday> g_holidays;
+
+void LoadHolidays(){
+    g_holidays.clear();
+    std::ifstream file("holidays.json");
+    if (file.is_open()){
+        try {
+            nlohmann::json j;
+            file >> j;
+            nlohmann::json holidays = j["holidays"];
+            time_t currentTime = time(NULL);
+            tm* currentTm = localtime(&currentTime);
+            currentTm->tm_hour = 0;
+            currentTm->tm_min = 0;
+            currentTm->tm_sec = 0;
+            currentTime = mktime(currentTm);
+            for (auto& h : holidays){
+                Holiday holiday;
+                std::vector<std::string> start = Explode(h["start"], "-");
+                if (start.size() == 3){
+                    holiday.m_start.tm_year = atoi(start[0].c_str()) - 1900;
+                    holiday.m_start.tm_mon = atoi(start[1].c_str()) - 1;
+                    holiday.m_start.tm_mday = atoi(start[2].c_str());
+                    time_t startTime = mktime(&holiday.m_start);
+                    holiday.m_daysTo = round(difftime(startTime, currentTime) / 86400);
+                    if (holiday.m_daysTo <= 0){
+                        holiday.m_daysTo = 0;
+                        holiday.m_bStarted = true;
+                    }
+                }
+                else {
+                    printf("Some of the holidays' start is %u in size\n", start.size());
+                    continue;
+                }
+                std::vector<std::string> end = Explode(h["end"], "-");
+                if (end.size() == 3){
+                    holiday.m_end.tm_year = atoi(end[0].c_str()) - 1900;
+                    holiday.m_end.tm_mon = atoi(end[1].c_str()) - 1;
+                    holiday.m_end.tm_mday = atoi(end[2].c_str());
+                    time_t endTime = mktime(&holiday.m_end);
+                    if (holiday.m_bStarted){
+                        holiday.m_daysTo = round(difftime(endTime, currentTime) / 86400);
+                    }
+                }
+                else {
+                    printf("Some of the holidays' end is %u in size\n", end.size());
+                    continue;
+                }
+
+                if (holiday.m_daysTo >= 0) g_holidays.push_back(holiday);
+            }
+            return;
+        }
+        catch (std::exception& e){
+            printf("Caught exception while loading holidays: %s\n", e.what());
+        }
+    }
+    else {
+        printf("Couldn't open holidays.json. Is it in the right place?\n");
+    }
+    printf("Holidays loading failed\n");
 }
 
 TgBot::Bot* g_bot = NULL;
