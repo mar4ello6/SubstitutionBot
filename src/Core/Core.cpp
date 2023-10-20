@@ -1,5 +1,6 @@
 #include <fstream>
 #include <chrono>
+#include <random>
 #include <nlohmann/json.hpp>
 #include "Core.h"
 
@@ -403,6 +404,39 @@ std::string TimeToDate(tm* time, bool addDayName){
         return result + ")";
     }
     return dateStr.str();
+}
+
+std::string DaysToMonthsText(unsigned short days){
+    std::string result = "";
+    unsigned char mon = days / 30;
+    days %= 30;
+    if (mon > 0){
+        result += std::to_string(mon) + " ";
+        mon %= 100;
+        if (mon / 10 != 1) mon %= 10;
+        if (mon == 1) result += "месяц";
+        else if (mon >= 2 && mon <= 4) result += "месяца";
+        else result += "месяцев";
+    }
+    if (days > 0 || mon == 0){
+        if (mon > 0) result += " и ";
+        result += std::to_string(days) + " ";
+        days %= 100;
+        if (days / 10 != 1) days %= 10;
+        if (days == 1) result += "день";
+        else if (days >= 2 && days <= 4) result += "дня";
+        else result += "дней";
+    }
+    return result;
+}
+
+int RandomInt(int min, int max){
+    std::uniform_int_distribution<std::mt19937::result_type> udist(min, max);
+    std::mt19937 rng;
+    std::mt19937::result_type const seedval = std::chrono::steady_clock::now().time_since_epoch().count() * std::chrono::steady_clock::now().time_since_epoch().count();
+    rng.seed(seedval);
+    std::mt19937::result_type random_number = udist(rng);
+    return random_number;
 }
 
 uint32_t HashString(unsigned char* str, int len)

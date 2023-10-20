@@ -16,4 +16,10 @@ namespace TGCommands{
     void ssite(TgBot::Message::Ptr message);
     void courses(TgBot::Message::Ptr message);
     void holidays(TgBot::Message::Ptr message);
+    void reminders(TgBot::Message::Ptr message);
+    void addReminder(TgBot::Message::Ptr message);
+    void addReminderCallback(TgBot::CallbackQuery::Ptr query);
+    void addReminderToggleCallback(TgBot::CallbackQuery::Ptr query);
+    void remReminder(TgBot::Message::Ptr message);
+    void remReminderCallback(TgBot::CallbackQuery::Ptr query);
 }

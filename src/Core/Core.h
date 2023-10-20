@@ -105,6 +105,9 @@ int GetSecondsToMidnight();
 bool IsMonday();
 std::string GetDate(int dayOffset = 0);
 std::string TimeToDate(tm* time, bool addDayName = false);
+std::string DaysToMonthsText(unsigned short days);
+
+int RandomInt(int min, int max);
 
 uint32_t HashString(unsigned char* str, int len);
 std::vector<std::string> Explode(std::string str, std::string token);

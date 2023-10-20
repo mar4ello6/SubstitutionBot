@@ -1,7 +1,13 @@
 # SubstitutionBot
 This bot sends a message to a Telegram chat when substitutions on edupage.org changes.
 
-It also sends birthday reminders, can ping everyone in chat, ping some group and provide a link to the school menu.
+All of this bot's features:
+- Notification about new substitutions
+- Birthday reminders
+- Ping everyone or some group in the chat
+- Provide a link to the school menu
+- Notification about the end of a course
+- Create your own custom reminders
 
 This bot uses:
 * [tgbot-cpp](https://github.com/reo7sp/tgbot-cpp)

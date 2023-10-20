@@ -10,5 +10,5 @@ include_directories(ext/json/include ext/tgbot-cpp/include ext/httplib ext/SQLit
 
 add_executable(sbot
                 src/main.cpp src/Commands.cpp src/Core/Core.cpp src/edupage/Substitution.cpp src/Checkers/SubstitutionChecker.cpp src/Checkers/BirthdayChecker.cpp
-                src/Checkers/CoursesChecker.cpp)
+                src/Checkers/CoursesChecker.cpp src/Checkers/RemindChecker.cpp)
 target_link_libraries(sbot TgBot ssl gumbo SQLiteCpp)

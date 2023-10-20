@@ -3,6 +3,7 @@
 #include "Checkers/SubstitutionChecker.h"
 #include "Checkers/BirthdayChecker.h"
 #include "Checkers/CoursesChecker.h"
+#include "Checkers/RemindChecker.h"
 #include "Commands.h"
 
 int main(){
@@ -36,6 +37,12 @@ int main(){
     g_bot->getEvents().onCommand("ssite", TGCommands::ssite);
     g_bot->getEvents().onCommand("courses", TGCommands::courses);
     g_bot->getEvents().onCommand("holidays", TGCommands::holidays);
+    g_bot->getEvents().onCommand("reminders", TGCommands::reminders);
+    g_bot->getEvents().onCommand("addreminder", TGCommands::addReminder);
+    g_bot->getEvents().onCallbackQuery(TGCommands::addReminderCallback);
+    g_bot->getEvents().onCallbackQuery(TGCommands::addReminderToggleCallback);
+    g_bot->getEvents().onCommand("remreminder", TGCommands::remReminder);
+    g_bot->getEvents().onCallbackQuery(TGCommands::remReminderCallback);
 
     printf("Starting event poll...\n");
     TgBot::TgLongPoll tgPoll(*g_bot);
@@ -43,6 +50,7 @@ int main(){
         g_subChecker.OnUpdate();
         g_BDayChecker.OnUpdate();
         g_coursesChecker.OnUpdate();
+        g_remindChecker.OnUpdate();
 
         //this timeouts in around 10 seconds, looks good enough...
         try {
