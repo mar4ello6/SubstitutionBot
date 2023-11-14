@@ -7,13 +7,16 @@ namespace Edupage{
         enum Type{
             CHANGE,
             REMOVE,
-            ABSENT
+            ABSENT,
+            ADDL
         } type;
         std::pair<short, short> period;
         std::string subject;
+        std::string newSubject; //sometimes subject is changed too...
         std::string oTeacher; //original teacher who's being replaced
         std::string sTeacher; //teacher who will replace
         std::string note; //some times there are some notes and info
+        short movedFrom = -999; //for ADDL, when moved from some period
 
         int GetSpaceForSerialize();
         /**

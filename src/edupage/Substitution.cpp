@@ -7,7 +7,7 @@
 #include <gumbo.h>
 
 int Edupage::Substitution::GetSpaceForSerialize(){
-    return 5 + subject.size() + oTeacher.size() + sTeacher.size() + note.size();
+    return 7 + subject.size() + newSubject.size() + oTeacher.size() + sTeacher.size() + note.size();
 }
 void Edupage::Substitution::SerializeToMem(int& mempos, unsigned char* data){
     data[mempos] = type;
@@ -16,8 +16,12 @@ void Edupage::Substitution::SerializeToMem(int& mempos, unsigned char* data){
     mempos += 2;
     *(short*)(data + mempos) = period.second;
     mempos += 2;
+    *(short*)(data + mempos) = movedFrom;
+    mempos += 2;
     memcpy(data + mempos, subject.c_str(), subject.size());
     mempos += subject.size();
+    memcpy(data + mempos, newSubject.c_str(), newSubject.size());
+    mempos += newSubject.size();
     memcpy(data + mempos, oTeacher.c_str(), oTeacher.size());
     mempos += oTeacher.size();
     memcpy(data + mempos, sTeacher.c_str(), sTeacher.size());
@@ -30,18 +34,28 @@ std::string Edupage::Substitution::GetString(){
     std::string result = "";
     if (period.first == period.second) result += "#" + std::to_string(period.first);
     else result += "#" + std::to_string(period.first) + " - #" + std::to_string(period.second);
-    if (type != Edupage::Substitution::Type::ABSENT) result += " (" + subject + "): ";
+    if (type != Edupage::Substitution::Type::ABSENT) {
+        if (newSubject.empty()) result += " (" + subject + "): ";
+        else result += " (<s>" + subject + "</s>  ➡  " + newSubject + "): ";
+    }
     switch (type){
         case Type::CHANGE:
             if (!oTeacher.empty() && !sTeacher.empty()){
                 result += "<s>" + oTeacher + "</s>  ➡  " + sTeacher;
             }
+            else result = result.substr(0, result.length() - 1);
         break;
         case Type::REMOVE:
             result += "🚫  Отменено!";
         break;
         case Type::ABSENT:
             result += ": Уходим!";
+        break;
+        case Type::ADDL:
+            if (movedFrom != -999){
+                result += "Вместо #" + std::to_string(movedFrom) + ", ";
+            }
+            result += sTeacher;
         break;
     }
     if (!note.empty()){
@@ -131,6 +145,9 @@ std::vector<Edupage::Substitution> GetSubstitutionsFromNode(GumboNode* node){
             else if (strcmp(rowAttr->value, "row absent") == 0) { //class is gone
                 sub.type = Edupage::Substitution::ABSENT;
             }
+            else if (strcmp(rowAttr->value, "row add") == 0) { //lesson added
+                sub.type = Edupage::Substitution::ADDL;
+            }
             else continue;
 
             if (rows->v.element.children.length < 1) continue; //no info, not inserting it into vector
@@ -168,21 +185,29 @@ std::vector<Edupage::Substitution> GetSubstitutionsFromNode(GumboNode* node){
                     }
                 }
                 if (strcmp(infoAttr->value, "info") == 0 && sub.type != Edupage::Substitution::ABSENT) { //when class is absent, there's nothing we would need
-                    sub.subject = valueStr.substr(0, valueStr.find('-') - 1);
+                    std::size_t subjectDelim = valueStr.find('-');
+                    sub.subject = valueStr.substr(0, subjectDelim - 1);
+                    std::size_t newSubjectDelim = sub.subject.find("➔");
+                    if (newSubjectDelim != std::string::npos){ //subject is changed
+                        sub.newSubject = sub.subject.substr(newSubjectDelim + 4);
+                        sub.subject = sub.subject.substr(1, newSubjectDelim - 3); //we need to remove brackets too
+                    }
+                    valueStr = valueStr.substr(subjectDelim);
 
                     if (sub.type == Edupage::Substitution::CHANGE){
-                        std::size_t oTeacherStart = valueStr.find('(');
-                        if (oTeacherStart != std::string::npos){ //else it's not really a change, probably just some info
-                            oTeacherStart += 1;
-                            sub.oTeacher = valueStr.substr(oTeacherStart, valueStr.find(')') - oTeacherStart);
-                        }
-
                         std::size_t teachersSeparator = valueStr.find("➔"); //This is 3 symbols!!!
+                        std::size_t oTeacherStart = std::string::npos;
+
                         std::size_t infoSeparator = valueStr.find(',', (teachersSeparator == std::string::npos ? 0 : teachersSeparator)); //probably it has some info
                         if (infoSeparator != std::string::npos){
                             sub.note = valueStr.substr(infoSeparator + 2);
                         }
                         else infoSeparator = 0;
+
+                        if (teachersSeparator != std::string::npos || infoSeparator == 0){ //else it's not really a change, probably just some info
+                            oTeacherStart = valueStr.find('(') + 1;
+                            sub.oTeacher = valueStr.substr(oTeacherStart, valueStr.find(')') - oTeacherStart);
+                        }
                         if (oTeacherStart != std::string::npos){
                             if (teachersSeparator != std::string::npos){
                                 std::size_t sTeacherLen = valueStr.length() - teachersSeparator - 4;
@@ -200,14 +225,32 @@ std::vector<Edupage::Substitution> GetSubstitutionsFromNode(GumboNode* node){
                         if (oTeacherEnd != std::string::npos){
                             sub.oTeacher = valueStr.substr(oTeacherStart, oTeacherEnd - oTeacherStart);
                             std::size_t noteStart = valueStr.find(',', oTeacherEnd + 1);
-                            if (sub.oTeacher.find(' ') == std::string::npos){ //not a teacher, teachers usually have space in their names ('Cancelled' text)
-                                sub.oTeacher.clear();
-                                noteStart = oTeacherEnd;
+                            if (noteStart == std::string::npos && valueStr.find(' ', oTeacherEnd + 2) != std::string::npos){ //probably there's just a note there
+                                sub.note = valueStr.substr(oTeacherEnd + 2);
                             }
-                            if (noteStart != std::string::npos){
-                                sub.note = valueStr.substr(noteStart + 2);
+                            else {
+                                if (sub.oTeacher.find(' ') == std::string::npos){ //not a teacher, teachers usually have space in their names ('Cancelled' text)
+                                    sub.oTeacher.clear();
+                                    noteStart = oTeacherEnd;
+                                }
+                                if (noteStart != std::string::npos){
+                                    sub.note = valueStr.substr(noteStart + 2);
+                                }
                             }
                         }
+                    }
+                    if (sub.type == Edupage::Substitution::ADDL){
+                        std::size_t movedFromPos = valueStr.find("Перемещено из периода: "); //hard coding this... maybe i will change this later
+                        if (movedFromPos != std::string::npos){
+                            sub.movedFrom = atoi(valueStr.substr(movedFromPos + 42, valueStr.find('.', movedFromPos) - movedFromPos).c_str());
+                        }
+                        std::size_t teacherPos = valueStr.find("Учитель: "); //hard coding this... maybe i will change this later
+                        std::size_t notePos = valueStr.find(',', teacherPos);
+                        if (notePos != std::string::npos){
+                            sub.sTeacher = valueStr.substr(teacherPos + 16, notePos - teacherPos - 16);
+                            sub.note = valueStr.substr(notePos + 2);
+                        }
+                        else sub.sTeacher = valueStr.substr(teacherPos + 16);
                     }
                 }
             }
