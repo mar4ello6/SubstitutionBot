@@ -216,7 +216,7 @@ std::vector<Edupage::Substitution> GetSubstitutionsFromNode(GumboNode* node){
                                 }
                                 sub.sTeacher = valueStr.substr(teachersSeparator + 4, sTeacherLen);
                             }
-                            else sub.sTeacher = "TBA"; //Another teacher is not announced yet...
+                            else sub.sTeacher = "???"; //Another teacher is not announced yet...
                         }
                     }
                     if (sub.type == Edupage::Substitution::REMOVE){

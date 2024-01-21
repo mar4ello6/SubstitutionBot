@@ -30,6 +30,7 @@ int main(){
     g_bot->getEvents().onCommand("subs", TGCommands::substitutions);
     g_bot->getEvents().onCommand("menu", TGCommands::menu);
     g_bot->getEvents().onCommand("list", TGCommands::list);
+    g_bot->getEvents().onCallbackQuery(TGCommands::listCallback);
     g_bot->getEvents().onCommand("bdays", TGCommands::bdays);
     g_bot->getEvents().onCommand("everyone", TGCommands::everyone);
     g_bot->getEvents().onCommand("ping", TGCommands::ping);

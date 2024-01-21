@@ -27,7 +27,7 @@ void TGCommands::sendMyCommands(){
 
     cmdArray = TgBot::BotCommand::Ptr(new TgBot::BotCommand);
     cmdArray->command = "list";
-    cmdArray->description = "Посмотреть список класса.";
+    cmdArray->description = "Посмотреть список класса или группы.";
     commands.push_back(cmdArray);
 
     cmdArray = TgBot::BotCommand::Ptr(new TgBot::BotCommand);
@@ -186,15 +186,93 @@ void TGCommands::list(TgBot::Message::Ptr message){
         return;
     }
 
-    std::string messageStr = "Список " + g_config.m_class + " по eKool:\n";
+    TgBot::InlineKeyboardMarkup::Ptr inlineKeyboard(new TgBot::InlineKeyboardMarkup);
+    std::vector<TgBot::InlineKeyboardButton::Ptr> buttonsRow;
+    TgBot::InlineKeyboardButton::Ptr inlineButton;
+
+    inlineButton = TgBot::InlineKeyboardButton::Ptr(new TgBot::InlineKeyboardButton);
+    inlineButton->text = "Все";
+    inlineButton->callbackData = "listAll";
+    buttonsRow.push_back(inlineButton);
+    inlineKeyboard->inlineKeyboard.push_back(buttonsRow);
+    buttonsRow.clear();
+    for (auto& g : g_groups){
+        inlineButton = TgBot::InlineKeyboardButton::Ptr(new TgBot::InlineKeyboardButton);
+        inlineButton->text = g.m_name;
+        inlineButton->callbackData = "list" + std::to_string(g.m_id);
+        buttonsRow.push_back(inlineButton);
+
+        if (buttonsRow.size() >= 2){
+            inlineKeyboard->inlineKeyboard.push_back(buttonsRow);
+            buttonsRow.clear();
+        }
+    }
+    if (buttonsRow.size() > 0){
+        inlineKeyboard->inlineKeyboard.push_back(buttonsRow);
+        buttonsRow.clear();
+    }
+
+    try {
+        g_bot->getApi().sendMessage(message->chat->id, "Выберите список группы.", false, 0, inlineKeyboard, "HTML");
+    } catch (std::exception& e) { 
+        printf("Caught exception while sending list command: %s\n", e.what());
+    }
+}
+
+void TGCommands::listCallback(TgBot::CallbackQuery::Ptr query){
+    if (query->data.substr(0, 4) != "list") return;
+    if (query->message->chat->id != g_config.m_targetChat) { //other people can (i think) dm our bot and get private info about our class... I don't want that
+        try {
+            g_bot->getApi().answerCallbackQuery(query->id, "Этой коммандой можно пользоваться только в чате класса!", true);
+        } catch (...) {}
+        return;
+    }
+    if (g_classmates.size() < 1) {
+        try {
+            g_bot->getApi().answerCallbackQuery(query->id, "Список класса не загружен, попробуйте позже.", true);
+        } catch (...) {}
+        return;
+    }
+
+    if (query->data.substr(4) == "All"){
+        std::string messageStr = "Список " + g_config.m_class + ":\n";
+        uint32_t personNum = 0;
+        for (auto& c : g_classmates){
+            messageStr += std::to_string(++personNum) + ". " + c.m_name + "\n";
+        }
+
+        try {
+            g_bot->getApi().editMessageText(messageStr.substr(0, messageStr.length() - 1), query->message->chat->id, query->message->messageId, "", "HTML");
+        } catch (std::exception& e) { 
+            printf("Caught exception while sending whole class list: %s\n", e.what());
+        }
+        return;
+    }
+
+    unsigned char gId = 0;
+    try {
+        gId = atoi(query->data.substr(4).c_str());
+    } catch (...) { return; }
+    Group group;
+    for (auto& g : g_groups) {
+        if (g.m_id == gId) {
+            group = g;
+            break;
+        }
+    }
+    if (group.m_name.empty()) return;
+
+    std::string messageStr = "Список " + group.m_name + ":\n";
     uint32_t personNum = 0;
     for (auto& c : g_classmates){
+        if (!c.IsInGroup(group.m_id)) continue;
         messageStr += std::to_string(++personNum) + ". " + c.m_name + "\n";
     }
+
     try {
-        g_bot->getApi().sendMessage(message->chat->id, messageStr.substr(0, messageStr.length() - 1), false, 0, nullptr, "HTML");
+        g_bot->getApi().editMessageText(messageStr.substr(0, messageStr.length() - 1), query->message->chat->id, query->message->messageId, "", "HTML");
     } catch (std::exception& e) { 
-        printf("Caught exception while sending class list: %s\n", e.what());
+        printf("Caught exception while sending group #%u's list: %s\n", gId, e.what());
     }
 }
 
