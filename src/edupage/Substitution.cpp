@@ -55,7 +55,10 @@ std::string Edupage::Substitution::GetString(){
             if (movedFrom != -999){
                 result += "Вместо #" + std::to_string(movedFrom) + ", ";
             }
-            result += sTeacher;
+            if (!oTeacher.empty()) {
+                result += "<s>" + oTeacher + "</s>  ➡  " + sTeacher;
+            }
+            else result += sTeacher;
         break;
     }
     if (!note.empty()){
@@ -245,12 +248,41 @@ std::vector<Edupage::Substitution> GetSubstitutionsFromNode(GumboNode* node){
                             sub.movedFrom = atoi(valueStr.substr(movedFromPos + 42, valueStr.find('.', movedFromPos) - movedFromPos).c_str());
                         }
                         std::size_t teacherPos = valueStr.find("Учитель: "); //hard coding this... maybe i will change this later
-                        std::size_t notePos = valueStr.find(',', teacherPos);
-                        if (notePos != std::string::npos){
-                            sub.sTeacher = valueStr.substr(teacherPos + 16, notePos - teacherPos - 16);
-                            sub.note = valueStr.substr(notePos + 2);
+                        if (teacherPos == std::string::npos) { //probably there's substitution
+                            teacherPos = valueStr.find("Замена: ");
+                            valueStr = valueStr.substr(teacherPos);
+                            std::size_t teachersSeparator = valueStr.find("➔"); //This is 3 symbols!!!
+                            std::size_t oTeacherStart = std::string::npos;
+
+                            std::size_t infoSeparator = valueStr.find(',', (teachersSeparator == std::string::npos ? 0 : teachersSeparator)); //probably it has some info
+                            if (infoSeparator != std::string::npos){
+                                sub.note = valueStr.substr(infoSeparator + 2);
+                            }
+                            else infoSeparator = 0;
+
+                            if (teachersSeparator != std::string::npos || infoSeparator == 0){ //else it's not really a change, probably just some info
+                                oTeacherStart = valueStr.find('(') + 1;
+                                sub.oTeacher = valueStr.substr(oTeacherStart, valueStr.find(')') - oTeacherStart);
+                            }
+                            if (oTeacherStart != std::string::npos){
+                                if (teachersSeparator != std::string::npos){
+                                    std::size_t sTeacherLen = valueStr.length() - teachersSeparator - 4;
+                                    if (infoSeparator > 0){
+                                        sTeacherLen -= sub.note.length() + 2;
+                                    }
+                                    sub.sTeacher = valueStr.substr(teachersSeparator + 4, sTeacherLen);
+                                }
+                                else sub.sTeacher = "???"; //Another teacher is not announced yet...
+                            }
                         }
-                        else sub.sTeacher = valueStr.substr(teacherPos + 16);
+                        else {
+                            std::size_t notePos = valueStr.find(',', teacherPos);
+                            if (notePos != std::string::npos){
+                                sub.sTeacher = valueStr.substr(teacherPos + 16, notePos - teacherPos - 16);
+                                sub.note = valueStr.substr(notePos + 2);
+                            }
+                            else sub.sTeacher = valueStr.substr(teacherPos + 16);
+                        }
                     }
                 }
             }

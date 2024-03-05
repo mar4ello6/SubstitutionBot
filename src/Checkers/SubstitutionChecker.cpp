@@ -71,7 +71,7 @@ bool SubstitutionChecker::OnNew(std::vector<std::pair<time_t, std::vector<Edupag
     try {
         g_bot->getApi().sendMessage(g_config.m_targetChat, message, false, 0, nullptr, "HTML");
     } catch (std::exception& e) { 
-        printf("Caught exception while sending new substitutions: %s\n", e.what());
+        printf("Caught exception while sending new substitutions: %s (Message: %s)\n", e.what(), message.c_str());
         return false;
     }
 
