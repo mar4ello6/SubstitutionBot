@@ -135,41 +135,47 @@ void sendMenuFailed(TgBot::Message::Ptr message){
     g_bot->getApi().sendMessage(message->chat->id, "Не получилось достать ссылку на меню.", false, 0, nullptr, "HTML");
 }
 void TGCommands::menu(TgBot::Message::Ptr message){
-    httplib::Client cli(g_config.m_schoolSiteURL);
-
-    auto result = cli.Get(g_config.m_schoolMenuLocation);
-    if (!result) {
-        printf("Failed to get menu page (HTTP error: %i)\n", result.error());
-        sendMenuFailed(message);
-        return;
+    std::string resultLink = "";
+    if (g_config.m_schoolMenuLocation.empty() && g_config.m_schoolMenuButtonLabel.empty()) { //means we should just send this link
+        resultLink = g_config.m_schoolSiteURL;
     }
-    if (result->status != 200){
-        printf("Failed to get menu page (HTTP status: %i)\n", result->status);
-        sendMenuFailed(message);
-        return;
-    }
+    else {
+        httplib::Client cli(g_config.m_schoolSiteURL);
 
-    GumboOutput* output = gumbo_parse(result->body.c_str());
-    GumboNode* menuNode = GetMenuLinkNode(output->root);
-    if (!menuNode){
-        sendMenuFailed(message);
+        auto result = cli.Get(g_config.m_schoolMenuLocation);
+        if (!result) {
+            printf("Failed to get menu page (HTTP error: %i)\n", result.error());
+            sendMenuFailed(message);
+            return;
+        }
+        if (result->status != 200){
+            printf("Failed to get menu page (HTTP status: %i)\n", result->status);
+            sendMenuFailed(message);
+            return;
+        }
+
+        GumboOutput* output = gumbo_parse(result->body.c_str());
+        GumboNode* menuNode = GetMenuLinkNode(output->root);
+        if (!menuNode){
+            sendMenuFailed(message);
+            gumbo_destroy_output(&kGumboDefaultOptions, output);
+            return;
+        }
+
+        GumboAttribute* attribute = gumbo_get_attribute(&menuNode->v.element.attributes, "href");
+        if (!attribute){
+            sendMenuFailed(message);
+            gumbo_destroy_output(&kGumboDefaultOptions, output);
+            return;
+        }
+        resultLink = attribute->value;
         gumbo_destroy_output(&kGumboDefaultOptions, output);
-        return;
-    }
-
-    GumboAttribute* attribute = gumbo_get_attribute(&menuNode->v.element.attributes, "href");
-    if (!attribute){
-        sendMenuFailed(message);
-        gumbo_destroy_output(&kGumboDefaultOptions, output);
-        return;
     }
     try {
-        g_bot->getApi().sendMessage(message->chat->id, string_format("<a href=\"%s\">Меню на неделю</a>", attribute->value), false, 0, nullptr, "HTML");
+        g_bot->getApi().sendMessage(message->chat->id, string_format("<a href=\"%s\">Меню на неделю</a>", resultLink.c_str()), false, 0, nullptr, "HTML");
     } catch (std::exception& e) { 
         printf("Caught exception while sending menu: %s\n", e.what());
     }
-
-    gumbo_destroy_output(&kGumboDefaultOptions, output);
 }
 
 void TGCommands::list(TgBot::Message::Ptr message){
