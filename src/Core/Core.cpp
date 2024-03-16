@@ -144,11 +144,17 @@ void LoadClassmates(){
                 else {
                     printf("%s's birthday is %u in size\n", mate.m_name.c_str(), birthday.size());
                 }
+
+                //we need to do this in case it is leap year
+                tm bdayTime = mate.m_birthday;
+                bdayTime.tm_year = time->tm_year;
+                mktime(&bdayTime);
+                
                 mate.m_daysUntilBirthday = DaysUntilBirthday(mate.m_birthday);
                 mate.m_age = time->tm_year - mate.m_birthday.tm_year;
-                if (mate.m_birthday.tm_yday > time->tm_yday) mate.m_age--;
+                if (bdayTime.tm_yday > time->tm_yday) mate.m_age--;
                 mate.m_bdayAge = time->tm_year - mate.m_birthday.tm_year;
-                if (mate.m_birthday.tm_yday < time->tm_yday) mate.m_bdayAge++;
+                if (bdayTime.tm_yday < time->tm_yday) mate.m_bdayAge++;
                 g_classmates.push_back(mate);
             }
             return;
@@ -166,15 +172,15 @@ void LoadClassmates(){
 unsigned short DaysUntilBirthday(tm birthday){
     time_t rawtime = time(NULL);
     tm *time = localtime(&rawtime);
+    birthday.tm_year = time->tm_year;
+    mktime(&birthday);
     if (time->tm_yday <= birthday.tm_yday) {
-        birthday.tm_year = time->tm_year;
-        mktime(&birthday);
         return birthday.tm_yday - time->tm_yday;
     }
     else {
-        birthday.tm_year = time->tm_year + 1;
+        birthday.tm_year++;
         mktime(&birthday);
-        return 365 - time->tm_yday + birthday.tm_yday;
+        return (time->tm_year % 4 == 0 ? 366 : 365) - time->tm_yday + birthday.tm_yday;
     }
     return 365;
 }

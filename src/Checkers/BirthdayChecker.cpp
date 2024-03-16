@@ -9,13 +9,18 @@ void BirthdayChecker::OnUpdate() {
         time_t rawtime = time(NULL);
         tm *time = localtime(&rawtime);
         for (auto& c : g_classmates){
+            //we need to do this in case it is leap year
+            tm bdayTime = c.m_birthday;
+            bdayTime.tm_year = time->tm_year;
+            mktime(&bdayTime);
+
             c.m_daysUntilBirthday = DaysUntilBirthday(c.m_birthday);
             if (c.m_daysUntilBirthday == 0){
                 c.m_age = time->tm_year - c.m_birthday.tm_year;
             }
             if (c.m_daysUntilBirthday >= 364){
                 c.m_bdayAge = time->tm_year - c.m_birthday.tm_year;
-                if (c.m_birthday.tm_yday < time->tm_yday) c.m_bdayAge++;
+                if (bdayTime.tm_yday < time->tm_yday) c.m_bdayAge++;
             }
         }
         m_bMidnightCheckDone = true;
