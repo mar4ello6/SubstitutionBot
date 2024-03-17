@@ -11,6 +11,7 @@ namespace TGCommands{
     void list(TgBot::Message::Ptr message);
     void listCallback(TgBot::CallbackQuery::Ptr query);
     void bdays(TgBot::Message::Ptr message);
+    void tbdays(TgBot::Message::Ptr message);
     void everyone(TgBot::Message::Ptr message);
     void ping(TgBot::Message::Ptr message);
     void pingCallback(TgBot::CallbackQuery::Ptr query);

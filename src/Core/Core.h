@@ -66,6 +66,19 @@ struct Classmate{
 };
 extern std::vector<Classmate> g_classmates;
 void LoadClassmates();
+struct Teacher{
+    Teacher();
+
+    std::string m_name = "";
+    tm m_birthday;
+    unsigned short m_daysUntilBirthday = 0;
+    unsigned char m_age = 0;
+    unsigned char m_bdayAge = 0;
+
+    bool operator<(const Teacher& compr) { return m_daysUntilBirthday < compr.m_daysUntilBirthday; }
+};
+extern std::vector<Teacher> g_teachers;
+void LoadTeachers();
 unsigned short DaysUntilBirthday(tm birthday);
 
 struct Group{

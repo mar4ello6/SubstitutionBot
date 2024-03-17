@@ -9,6 +9,7 @@
 int main(){
     //loading classmates, their birthdays and groups
     LoadClassmates();
+    LoadTeachers();
     LoadGroups();
     LoadCourses();
 
@@ -32,6 +33,7 @@ int main(){
     g_bot->getEvents().onCommand("list", TGCommands::list);
     g_bot->getEvents().onCallbackQuery(TGCommands::listCallback);
     g_bot->getEvents().onCommand("bdays", TGCommands::bdays);
+    g_bot->getEvents().onCommand("tbdays", TGCommands::tbdays);
     g_bot->getEvents().onCommand("everyone", TGCommands::everyone);
     g_bot->getEvents().onCommand("ping", TGCommands::ping);
     g_bot->getEvents().onCallbackQuery(TGCommands::pingCallback);

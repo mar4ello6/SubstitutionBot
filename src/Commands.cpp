@@ -36,6 +36,11 @@ void TGCommands::sendMyCommands(){
     commands.push_back(cmdArray);
 
     cmdArray = TgBot::BotCommand::Ptr(new TgBot::BotCommand);
+    cmdArray->command = "tbdays";
+    cmdArray->description = "Посмотреть дни рождения учителей.";
+    commands.push_back(cmdArray);
+
+    cmdArray = TgBot::BotCommand::Ptr(new TgBot::BotCommand);
     cmdArray->command = "everyone";
     cmdArray->description = "Пингануть всех.";
     commands.push_back(cmdArray);
@@ -282,6 +287,38 @@ void TGCommands::listCallback(TgBot::CallbackQuery::Ptr query){
     }
 }
 
+template<typename T>
+void sendBdays(TgBot::Message::Ptr message, std::vector<T> ppl) {
+    std::string messageStr;
+    if (std::is_same<T, Teacher>::value) messageStr = "Список дней рождений учителей:\n";
+    else messageStr = "Список дней рождений " + g_config.m_class + " класса:\n";
+    std::sort(ppl.begin(), ppl.end());
+    for (auto& p : ppl){
+        messageStr += string_format("- %s (%02i.%02i.%04i: <i>%i</i>, <b>", p.m_name.c_str(), p.m_birthday.tm_mday, p.m_birthday.tm_mon + 1, p.m_birthday.tm_year + 1900, p.m_age);
+        if (p.m_daysUntilBirthday == 0) messageStr += "СЕГОДНЯ! 🎂";
+        else if (p.m_daysUntilBirthday == 1) messageStr += "завтра";
+        else {
+            unsigned short daysLeft = p.m_daysUntilBirthday;
+            messageStr += "через " + std::to_string(daysLeft) + " ";
+            daysLeft %= 100;
+            if (daysLeft / 10 != 1) daysLeft %= 10;
+            if (daysLeft == 1) messageStr += "день";
+            else if (daysLeft >= 2 && daysLeft <= 4) messageStr += "дня";
+            else messageStr += "дней";
+        }
+        if (p.m_daysUntilBirthday >= 1){
+            messageStr += string_format(" %i-летие", p.m_bdayAge);
+        }
+        messageStr += "</b>)\n";
+    }
+
+    try {
+        g_bot->getApi().sendMessage(message->chat->id, messageStr.substr(0, messageStr.length() - 1), false, 0, nullptr, "HTML");
+    } catch (std::exception& e) { 
+        printf("Caught exception while sending birthdays: %s\n", e.what());
+    }
+}
+
 void TGCommands::bdays(TgBot::Message::Ptr message){
     if (message->chat->id != g_config.m_targetChat) { //other people can (i think) dm our bot and get private info about our class... I don't want that
         try {
@@ -296,33 +333,24 @@ void TGCommands::bdays(TgBot::Message::Ptr message){
         return;
     }
 
-    std::string messageStr = "Список дней рождений " + g_config.m_class + " класса:\n";
-    std::vector<Classmate> classmates = g_classmates;
-    std::sort(classmates.begin(), classmates.end());
-    for (auto& c : classmates){
-        messageStr += string_format("- %s (%02i.%02i.%04i: <i>%i</i>, <b>", c.m_name.c_str(), c.m_birthday.tm_mday, c.m_birthday.tm_mon + 1, c.m_birthday.tm_year + 1900, c.m_age);
-        if (c.m_daysUntilBirthday == 0) messageStr += "СЕГОДНЯ! 🎂";
-        else if (c.m_daysUntilBirthday == 1) messageStr += "завтра";
-        else {
-            unsigned short daysLeft = c.m_daysUntilBirthday;
-            messageStr += "через " + std::to_string(daysLeft) + " ";
-            daysLeft %= 100;
-            if (daysLeft / 10 != 1) daysLeft %= 10;
-            if (daysLeft == 1) messageStr += "день";
-            else if (daysLeft >= 2 && daysLeft <= 4) messageStr += "дня";
-            else messageStr += "дней";
-        }
-        if (c.m_daysUntilBirthday >= 1){
-            messageStr += string_format(" %i-летие", c.m_bdayAge);
-        }
-        messageStr += "</b>)\n";
+    sendBdays<Classmate>(message, g_classmates);
+}
+
+void TGCommands::tbdays(TgBot::Message::Ptr message){
+    if (message->chat->id != g_config.m_targetChat) { //other people can (i think) dm our bot and get private info about our class... I don't want that
+        try {
+            g_bot->getApi().sendMessage(message->chat->id, "Этой коммандой можно пользоваться только в чате класса!", false, 0, nullptr, "HTML");
+        } catch (...) {}
+        return;
+    }
+    if (g_teachers.size() < 1) {
+        try {
+            g_bot->getApi().sendMessage(message->chat->id, "Список учителей не загружен, попробуйте позже.", false, 0, nullptr, "HTML");
+        } catch (...) {}
+        return;
     }
 
-    try {
-        g_bot->getApi().sendMessage(message->chat->id, messageStr.substr(0, messageStr.length() - 1), false, 0, nullptr, "HTML");
-    } catch (std::exception& e) { 
-        printf("Caught exception while sending birthdays: %s\n", e.what());
-    }
+    sendBdays<Teacher>(message, g_teachers);
 }
 
 void TGCommands::everyone(TgBot::Message::Ptr message){

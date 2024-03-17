@@ -113,6 +113,10 @@ Classmate::Classmate(){
     memset(&m_birthday, 0, sizeof(m_birthday));
 }
 std::vector<Classmate> g_classmates;
+Teacher::Teacher(){
+    memset(&m_birthday, 0, sizeof(m_birthday));
+}
+std::vector<Teacher> g_teachers;
 
 bool Classmate::IsInGroup(unsigned char groupID){
     for (auto& g : m_groups) if (g == groupID) return true;
@@ -167,6 +171,54 @@ void LoadClassmates(){
         printf("Couldn't open classmates.json. Is it in the right place?\n");
     }
     printf("Classmates loading failed\n");
+}
+
+void LoadTeachers(){
+    g_teachers.clear();
+    std::ifstream file("teachers.json");
+    if (file.is_open()){
+        try {
+            nlohmann::json j;
+            file >> j;
+            nlohmann::json teachers = j["teachers"];
+            time_t rawtime = time(NULL);
+            tm *time = localtime(&rawtime);
+            for (auto& t : teachers){
+                Teacher teacher;
+                teacher.m_name = t["name"];
+                std::vector<std::string> birthday = Explode(t["birthday"], "-");
+                if (birthday.size() == 3){
+                    teacher.m_birthday.tm_year = atoi(birthday[0].c_str()) - 1900;
+                    teacher.m_birthday.tm_mon = atoi(birthday[1].c_str()) - 1;
+                    teacher.m_birthday.tm_mday = atoi(birthday[2].c_str());
+                    mktime(&teacher.m_birthday);
+                }
+                else {
+                    printf("%s's birthday is %u in size\n", teacher.m_name.c_str(), birthday.size());
+                }
+
+                //we need to do this in case it is leap year
+                tm bdayTime = teacher.m_birthday;
+                bdayTime.tm_year = time->tm_year;
+                mktime(&bdayTime);
+                
+                teacher.m_daysUntilBirthday = DaysUntilBirthday(teacher.m_birthday);
+                teacher.m_age = time->tm_year - teacher.m_birthday.tm_year;
+                if (bdayTime.tm_yday > time->tm_yday) teacher.m_age--;
+                teacher.m_bdayAge = time->tm_year - teacher.m_birthday.tm_year;
+                if (bdayTime.tm_yday < time->tm_yday) teacher.m_bdayAge++;
+                g_teachers.push_back(teacher);
+            }
+            return;
+        }
+        catch (std::exception& e){
+            printf("Caught exception while loading teachers: %s\n", e.what());
+        }
+    }
+    else {
+        printf("Couldn't open teachers.json. Is it in the right place?\n");
+    }
+    printf("Teachers loading failed\n");
 }
 
 unsigned short DaysUntilBirthday(tm birthday){
